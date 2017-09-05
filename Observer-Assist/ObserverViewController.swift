@@ -121,11 +121,21 @@ class ObserverViewController: UIViewController, UIPickerViewDataSource, UIPicker
     
     func agitationSliderTapped(_ gestureRecognizer: UIGestureRecognizer) {
         //self.holdPulseTap = true
+        if (self.stopAction.isHidden == true) {
         self.updateSlider()
+        } else {
+            self.displayAlertMessage(message: "Stop the current action before moving the slider")
+        }
     }
     
     @IBAction func updateAgitationAction(_ sender: Any) {
-        self.updateSlider()
+        
+        if (self.stopAction.isHidden == true) {
+            self.updateSlider()
+        } else {
+            self.displayAlertMessage(message: "Stop the current action before moving the slider")
+        }
+
     }
     
     func updateSlider() {

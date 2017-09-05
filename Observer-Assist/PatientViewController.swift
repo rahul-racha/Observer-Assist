@@ -38,8 +38,7 @@ class PatientViewController: UIViewController, UITableViewDataSource, UITableVie
     }
     
     func loadPatientDetails() {
-        let userid = Manager.userData!["id"] as! String
-        let role = Manager.userData!["role"] as! String
+        if let userid = Manager.userData?["id"] as? String, let role = Manager.userData?["role"] as? String {
         //if (Manager.reloadAllCells == true) {
             // Do any additional setup after loading the view, typically from a nib.
             let parameters: Parameters = ["user_id": userid, "role": role]
@@ -64,6 +63,7 @@ class PatientViewController: UIViewController, UITableViewDataSource, UITableVie
                 }
             }
         //}
+        }
     }
 
     func numberOfSections(in tableView: UITableView) -> Int {
