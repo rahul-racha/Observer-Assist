@@ -7,16 +7,92 @@
 //
 
 import UIKit
+import UserNotifications
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
 
     var window: UIWindow?
-
+    var orientationLock = UIInterfaceOrientationMask.portrait
+    
+    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        return self.orientationLock
+    }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
+        registerForPushNotifications(application: application)
         // Override point for customization after application launch.
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        
+        let myVC = storyboard.instantiateViewController(withIdentifier: "ViewController") as! ViewController
+        UIApplication.shared.keyWindow?.rootViewController = myVC
         return true
+    }
+    
+    func registerForPushNotifications(application: UIApplication) {
+        if #available(iOS 10.0, *) {
+            let center = UNUserNotificationCenter.current()
+            center.requestAuthorization(options: [.badge, .alert, .sound]) { (granted, error) in }
+            application.registerForRemoteNotifications()
+        } else if #available(iOS 9.0, *) {
+            // Fallback on earlier versions
+            //let notificationSettings = UIUserNotificationSettings(types: [.badge, .sound, .alert], categories: nil)
+            //application.registerUserNotificationSettings(notificationSettings)
+            //application.registerForRemoteNotifications()
+            
+            UIApplication.shared.registerUserNotificationSettings(UIUserNotificationSettings(types: [.badge, .sound, .alert], categories: nil))
+            UIApplication.shared.registerForRemoteNotifications()
+        } else if #available(iOS 8.0, *) {
+            UIApplication.shared.registerUserNotificationSettings(UIUserNotificationSettings(types: [.badge, .sound, .alert], categories: nil))
+            UIApplication.shared.registerForRemoteNotifications()
+        } else {
+            application.registerForRemoteNotifications(matching: [.badge, .sound, .alert])
+        }
+        
+        
+    }
+    
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        let deviceTokenString = deviceToken.reduce("", {$0 + String(format: "%02X", $1)})
+        Manager.deviceId = deviceTokenString
+        print(deviceTokenString)
+    }
+    
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        //print("Oops! \(error)")
+        //if code == 3010 {
+        print("Push notifications are not supported in the iOS Simulator.")
+        //} else {
+        print("application:didFailToRegisterForRemoteNotificationsWithError: %@", error)
+        //}
+    }
+    
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        
+        print(userInfo)
+        let data = userInfo["aps"] as! [String : Any]
+        let patient: [String: Any] = data["data"] as! [String : Any]
+        print(patient["location"])
+        print("ptient::::::\(patient)")
+        let isLocation = data["forlocation"] as? String
+        if (Manager.triggerNotifications == true) {
+            if (isLocation != nil && isLocation! == "yes") {
+                self.modifyPatientLocation(modifiedPatient: patient)
+            }
+        }
+        completionHandler(UIBackgroundFetchResult.newData);
+    }
+    
+    func modifyPatientLocation(modifiedPatient: [String: Any]) {
+        
+        if let rootViewController = window?.rootViewController as? PatientViewController {
+            if let navController = rootViewController.navigationController {
+                if let viewController = navController.viewControllers[0] as? ObserverViewController {
+                    viewController.changePatientDetails(modifiedPatient: modifiedPatient)
+                }
+            }
+        }
+        
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
