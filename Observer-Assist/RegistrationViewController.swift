@@ -21,6 +21,9 @@ class RegistrationViewController: UIViewController, UIPickerViewDelegate, UIPick
     @IBOutlet weak var txtConfirmPassword: UITextField!
     @IBOutlet weak var keyField: UITextField!
     
+    @IBOutlet weak var bottomConstraint: NSLayoutConstraint!
+    var isScroll: Bool?
+    
     var pickGender = ["Male", "Female"]
     
     override func viewDidLoad() {
@@ -32,8 +35,44 @@ class RegistrationViewController: UIViewController, UIPickerViewDelegate, UIPick
 
         // Do any additional setup after loading the view.
         */
+        self.isScroll = true
+        NotificationCenter.default.addObserver(self, selector: #selector(RegistrationViewController.keyboardWillShow), name: NSNotification.Name.UIKeyboardWillShow, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(RegistrationViewController.keyboardWillHide), name: NSNotification.Name.UIKeyboardWillHide, object: nil)
+        
+        let tap = UITapGestureRecognizer(target: self.view, action: #selector(UIView.endEditing(_:)))
+        tap.cancelsTouchesInView = false
+        self.view.addGestureRecognizer(tap)
     }
 
+    
+    func keyboardWillShow(notification: NSNotification) {
+        if (self.isScroll == true) {
+            adjustHeight(show: true, notification: notification)
+            self.isScroll = false
+        }
+    }
+    
+    func keyboardWillHide(notification: NSNotification) {
+        if (self.isScroll == false) {
+            adjustHeight(show: false, notification: notification)
+            self.isScroll = true
+        }
+    }
+    
+    func adjustHeight(show:Bool, notification:NSNotification) {
+        var userInfo = notification.userInfo!
+        let keyboardFrame:CGRect = (userInfo[UIKeyboardFrameBeginUserInfoKey] as! NSValue).cgRectValue
+        let animationDurarion = userInfo[UIKeyboardAnimationDurationUserInfoKey] as! TimeInterval
+        let changeInHeight = (keyboardFrame.height) * (show ? 1 : -1)
+        UIView.animate(withDuration: animationDurarion, animations: { () -> Void in
+            self.bottomConstraint.constant += changeInHeight
+            //if self.viewBox.frame.origin.y == 0{
+            //self.viewBox.frame.origin.y += changeInHeight
+            //}
+        })
+    }
+
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.

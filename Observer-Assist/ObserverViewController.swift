@@ -34,7 +34,7 @@ class ObserverViewController: UIViewController, UIPickerViewDataSource, UIPicker
     var selectedPatient: [String:Any]?
     var pickOption = [String]()
     var agiStatus: AGITATION = AGITATION.unknown
-    var agiScaleMap: [AGITATION: String] = [AGITATION.stable: "stable", AGITATION.partiallyaggressive: "slightly aggressive", AGITATION.aggressive: "aggressive", AGITATION.unknown: "unknown"]
+    var agiScaleMap: [AGITATION: String] = [AGITATION.stable: "stable", AGITATION.partiallyaggressive: "slightly agitated", AGITATION.aggressive: "agitated", AGITATION.unknown: "unknown"]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -141,7 +141,7 @@ class ObserverViewController: UIViewController, UIPickerViewDataSource, UIPicker
     func updateSlider() {
         let recordedTime = self.getTimestamp(forDisplay: false)
         self.getSliderStatus()
-        let wait = DispatchTime.now() + 2
+        let wait = DispatchTime.now() + 1.5
         DispatchQueue.main.asyncAfter(deadline: wait) {
         self.displayActions(recordedTime: recordedTime)
         }
@@ -215,6 +215,17 @@ class ObserverViewController: UIViewController, UIPickerViewDataSource, UIPicker
         self.displayConfirmation(message:"Click OK to stop the action", recordedTime: recordedTime, type: "stop")
     }
     
+    func displayVanishingAlert(message: String) {
+        let alert = UIAlertController(title: "", message: message, preferredStyle: .alert)
+        self.present(alert, animated: true, completion: nil)
+        
+        // change to desired number of seconds (in this case 5 seconds)
+        let when = DispatchTime.now() + 2
+        DispatchQueue.main.asyncAfter(deadline: when){
+            // your code with delay
+            alert.dismiss(animated: true, completion: nil)
+        }
+    }
     
     //*********************
     
@@ -226,12 +237,12 @@ class ObserverViewController: UIViewController, UIPickerViewDataSource, UIPicker
         if (self.selectedPatient?["id"] as? String != nil && Manager.userData?["id"] as? String != nil) {
     let parameters: Parameters = ["patient_id": self.selectedPatient!["id"] as! String, "observer_id": Manager.userData!["id"] as! String, "start_time": recordedTime, "status": self.agiScaleMap[self.agiStatus] ?? "unknown", "stable_click": isStableClick, "type": type]
     print("here para: \(parameters)")
-    Alamofire.request("http://qav2.cs.odu.edu/Dev_AggressionDetection/storeObserverData11.php",method: .post,parameters: parameters, encoding: URLEncoding.default).validate(statusCode: 200..<300)/*.validate(contentType: ["application/json"])*/.responseData { response in
+    Alamofire.request("http://qav2.cs.odu.edu/Dev_AggressionDetection/storeObserverData.php",method: .post,parameters: parameters, encoding: URLEncoding.default).validate(statusCode: 200..<300)/*.validate(contentType: ["application/json"])*/.responseData { response in
     DispatchQueue.main.async(execute: {
     if let data = response.data, let utf8Text = String(data: data, encoding: .utf8) {
     print("Data: \(utf8Text)")
     if utf8Text.range(of:"success") != nil{
-    //self.displayAlertMessage(message: "Submitted :)")
+    self.displayVanishingAlert(message: "Success!")
         result = true
     } else {
     // Perform ACTION
@@ -243,7 +254,7 @@ class ObserverViewController: UIViewController, UIPickerViewDataSource, UIPicker
     self.displayAlertMessage(message: "Server response is empty.")
     result = false
     }
-        result = true
+        //result = true
         if (result! == true) {
         if (type == "continuous") {
             self.stopAction.isHidden = false

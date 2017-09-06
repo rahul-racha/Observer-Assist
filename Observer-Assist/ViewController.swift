@@ -15,6 +15,9 @@ class ViewController: UIViewController {
     @IBOutlet weak var _username: UITextField!
     @IBOutlet weak var _password: UITextField!
     @IBOutlet weak var rememberCredentials: UISwitch!
+    @IBOutlet weak var bottomConstraint: NSLayoutConstraint!
+    var isScroll: Bool?
+
     
     var keyChainUser: String?
     var keyChainPwd: String?
@@ -27,6 +30,7 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         
         Manager.triggerNotifications = false
+        self.isScroll = true
         keyChainUser = KeychainWrapper.standard.string(forKey: "username")
         if(keyChainUser != nil) {
             _username?.text = keyChainUser!
@@ -40,15 +44,44 @@ class ViewController: UIViewController {
         rememberCredentials.addTarget(self, action: #selector(setWhenStateChanged(_:)), for: UIControlEvents.valueChanged)
         
         
-        /*NotificationCenter.default.addObserver(self, selector: #selector(LoginViewController.keyboardWillShow), name: NSNotification.Name.UIKeyboardWillShow, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(LoginViewController.keyboardWillHide), name: NSNotification.Name.UIKeyboardWillHide, object: nil)
-        */
+        NotificationCenter.default.addObserver(self, selector: #selector(ViewController.keyboardWillShow), name: NSNotification.Name.UIKeyboardWillShow, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(ViewController.keyboardWillHide), name: NSNotification.Name.UIKeyboardWillHide, object: nil)
+ 
         let tap = UITapGestureRecognizer(target: self.view, action: #selector(UIView.endEditing(_:)))
         tap.cancelsTouchesInView = false
         self.view.addGestureRecognizer(tap)
 
     }
 
+    
+    func keyboardWillShow(notification: NSNotification) {
+        if (self.isScroll == true) {
+            adjustHeight(show: true, notification: notification)
+            self.isScroll = false
+        }
+    }
+    
+    func keyboardWillHide(notification: NSNotification) {
+        if (self.isScroll == false) {
+            adjustHeight(show: false, notification: notification)
+            self.isScroll = true
+        }
+    }
+    
+    func adjustHeight(show:Bool, notification:NSNotification) {
+        var userInfo = notification.userInfo!
+        let keyboardFrame:CGRect = (userInfo[UIKeyboardFrameBeginUserInfoKey] as! NSValue).cgRectValue
+        let animationDurarion = userInfo[UIKeyboardAnimationDurationUserInfoKey] as! TimeInterval
+        let changeInHeight = (keyboardFrame.height) * (show ? 1 : -1)
+        UIView.animate(withDuration: animationDurarion, animations: { () -> Void in
+            self.bottomConstraint.constant += changeInHeight
+            //if self.viewBox.frame.origin.y == 0{
+            //self.viewBox.frame.origin.y += changeInHeight
+            //}
+        })
+    }
+
+    
     func displayAlertMessage(message: String) {
         let alertMsg = UIAlertController(title:"Alert", message: message,
                                          preferredStyle:UIAlertControllerStyle.alert);
