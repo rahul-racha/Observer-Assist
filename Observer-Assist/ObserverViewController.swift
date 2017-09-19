@@ -15,6 +15,7 @@ class ObserverViewController: UIViewController, UIPickerViewDataSource, UIPicker
         case stable
         case partiallyaggressive
         case aggressive
+        case veryaggressive
         case unknown
     }
     
@@ -34,7 +35,7 @@ class ObserverViewController: UIViewController, UIPickerViewDataSource, UIPicker
     var selectedPatient: [String:Any]?
     var pickOption = [String]()
     var agiStatus: AGITATION = AGITATION.unknown
-    var agiScaleMap: [AGITATION: String] = [AGITATION.stable: "stable", AGITATION.partiallyaggressive: "slightly agitated", AGITATION.aggressive: "agitated", AGITATION.unknown: "unknown"]
+    var agiScaleMap: [AGITATION: String] = [AGITATION.stable: "stable", AGITATION.partiallyaggressive: "slightly agitated", AGITATION.aggressive: "agitated", AGITATION.veryaggressive: "very agitated", AGITATION.unknown: "unknown"]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -46,7 +47,7 @@ class ObserverViewController: UIViewController, UIPickerViewDataSource, UIPicker
         
         self.updateTime()
         Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(updateTime), userInfo: nil, repeats: true)
-        
+        self.navigationController?.interactivePopGestureRecognizer?.isEnabled = false
         let doubleTapPulse = UITapGestureRecognizer(target: self, action: #selector(ObserverViewController.agitationSliderTapped(_:)))
         doubleTapPulse.numberOfTapsRequired = 2
         self.agitationSlider.addGestureRecognizer(doubleTapPulse)
@@ -148,6 +149,10 @@ class ObserverViewController: UIViewController, UIPickerViewDataSource, UIPicker
     }
     
     func displayActions(recordedTime: String) {
+        if (self.agitationSlider.value == 0) {
+            self.displayAlertMessage(message: "Do not report stable status")
+            return
+        }
         let alertController = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
 
         let continuousAction = UIAlertAction(title: "Continuous Action", style: .default) { (action) in
@@ -179,14 +184,19 @@ class ObserverViewController: UIViewController, UIPickerViewDataSource, UIPicker
             self.agiStatus = AGITATION.stable
             //self.agiScoreLabel.textColor = UIColor.green
         } else if (self.agitationSlider.value == 1) {
-            self.agitationSlider.thumbTintColor = UIColor.orange
-            self.agitationSlider.minimumTrackTintColor = UIColor.orange
+            self.agitationSlider.thumbTintColor = UIColor.yellow
+            self.agitationSlider.minimumTrackTintColor = UIColor.yellow
             self.agiStatus = AGITATION.partiallyaggressive
             //self.agiScoreLabel.textColor = UIColor.orange
         } else if (self.agitationSlider.value == 2) {
+            self.agitationSlider.thumbTintColor = UIColor.orange
+            self.agitationSlider.minimumTrackTintColor = UIColor.orange
+            self.agiStatus = AGITATION.aggressive
+            //self.agiScoreLabel.textColor = UIColor.orange
+        } else if (self.agitationSlider.value == 3) {
             self.agitationSlider.thumbTintColor = UIColor.red
             self.agitationSlider.minimumTrackTintColor = UIColor.red
-            self.agiStatus = AGITATION.aggressive
+            self.agiStatus = AGITATION.veryaggressive
             //self.agiScoreLabel.textColor = UIColor.red
         } else {
             self.agitationSlider.thumbTintColor = UIColor.gray
@@ -262,9 +272,11 @@ class ObserverViewController: UIViewController, UIPickerViewDataSource, UIPicker
         } else if (type == "single") {
             self.stopAction.isHidden = true
             self.runningTime.isHidden = true
+            self.initSliders(s: 0)
         } else if (type == "stop") {
             self.stopAction.isHidden = true
             self.runningTime.isHidden = true
+            self.initSliders(s: 0)
         }
         }
     })
